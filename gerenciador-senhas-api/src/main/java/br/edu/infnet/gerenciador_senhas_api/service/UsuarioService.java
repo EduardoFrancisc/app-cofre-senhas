@@ -9,6 +9,7 @@ import br.edu.infnet.gerenciador_senhas_api.model.Usuario;
 import br.edu.infnet.gerenciador_senhas_api.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.List;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO dto) {
@@ -29,8 +31,8 @@ public class UsuarioService {
             throw new EmailJaCadastradoException(dto.email());
         }
 
-        // TODO: substituir dto.senha() por passwordEncoder.encode(dto.senha()) ao integrar Spring Security
-        Usuario novoUsuario = new Usuario(null, dto.nome(), dto.email(), dto.senha(), dto.tipoUsuario());
+        Usuario novoUsuario = new Usuario(null, dto.nome(), dto.email(),
+                passwordEncoder.encode(dto.senha()), dto.tipoUsuario());
         Usuario salvo = usuarioRepository.save(novoUsuario);
 
         log.info("Usuário criado. ID: {}", salvo.getId());
@@ -68,9 +70,8 @@ public class UsuarioService {
         usuario.setEmail(dto.email());
         usuario.setTipoUsuario(dto.tipoUsuario());
 
-        // TODO: substituir por passwordEncoder.encode(dto.senha()) ao integrar Spring Security
         if (dto.senha() != null && !dto.senha().isBlank()) {
-            usuario.setSenha(dto.senha());
+            usuario.setSenha(passwordEncoder.encode(dto.senha()));
         }
 
         return UsuarioResponseDTO.fromEntity(usuarioRepository.save(usuario));

@@ -22,6 +22,7 @@ public class SenhaService {
 
     private final SenhaRepository senhaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AesEncryptionService aesEncryptionService;
 
     @Transactional
     public SenhaResponseDTO criarSenha(Long usuarioId, SenhaRequestDTO dto) {
@@ -30,18 +31,17 @@ public class SenhaService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new UsuarioNaoEncontradoException(usuarioId));
 
-        // TODO: aplicar criptografia AES-256 em dto.senha() antes de salvar no banco
         Senha novaSenha = new Senha();
         novaSenha.setTitulo(dto.titulo());
         novaSenha.setLogin(dto.login());
-        novaSenha.setSenha(dto.senha());
+        novaSenha.setSenha(aesEncryptionService.criptografar(dto.senha()));
         novaSenha.setUrl(dto.url());
         novaSenha.setObservacoes(dto.observacoes());
         novaSenha.setUsuario(usuario);
 
         Senha salva = senhaRepository.save(novaSenha);
         log.info("Senha criada. ID: {}", salva.getId());
-        return SenhaResponseDTO.fromEntity(salva);
+        return toResponseDTO(salva);
     }
 
     @Transactional(readOnly = true)
@@ -51,14 +51,14 @@ public class SenhaService {
         }
         return senhaRepository.findByUsuarioId(usuarioId)
                 .stream()
-                .map(SenhaResponseDTO::fromEntity)
+                .map(this::toResponseDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public SenhaResponseDTO buscarSenhaPorId(Long senhaId) {
         return senhaRepository.findById(senhaId)
-                .map(SenhaResponseDTO::fromEntity)
+                .map(this::toResponseDTO)
                 .orElseThrow(() -> new SenhaNaoEncontradaException(senhaId));
     }
 
@@ -71,12 +71,11 @@ public class SenhaService {
 
         senha.setTitulo(dto.titulo());
         senha.setLogin(dto.login());
-        // TODO: aplicar criptografia AES-256 em dto.senha() antes de salvar no banco
-        senha.setSenha(dto.senha());
+        senha.setSenha(aesEncryptionService.criptografar(dto.senha()));
         senha.setUrl(dto.url());
         senha.setObservacoes(dto.observacoes());
 
-        return SenhaResponseDTO.fromEntity(senhaRepository.save(senha));
+        return toResponseDTO(senhaRepository.save(senha));
     }
 
     @Transactional
@@ -86,5 +85,17 @@ public class SenhaService {
         }
         senhaRepository.deleteById(senhaId);
         log.info("Senha ID {} removida.", senhaId);
+    }
+
+    private SenhaResponseDTO toResponseDTO(Senha senha) {
+        return new SenhaResponseDTO(
+                senha.getId(),
+                senha.getTitulo(),
+                senha.getLogin(),
+                aesEncryptionService.descriptografar(senha.getSenha()),
+                senha.getUrl(),
+                senha.getObservacoes(),
+                senha.getUsuario().getId()
+        );
     }
 }

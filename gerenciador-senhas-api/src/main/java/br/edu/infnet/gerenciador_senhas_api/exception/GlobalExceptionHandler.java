@@ -2,10 +2,12 @@ package br.edu.infnet.gerenciador_senhas_api.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import br.edu.infnet.gerenciador_senhas_api.exception.AesEncryptionException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -45,6 +47,17 @@ public class GlobalExceptionHandler {
         body.put("campos", fieldErrors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(AesEncryptionException.class)
+    public ResponseEntity<Map<String, Object>> handleAesEncryption(AesEncryptionException ex) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Erro interno ao processar a criptografia da senha.");
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos.");
     }
 
     @ExceptionHandler(Exception.class)

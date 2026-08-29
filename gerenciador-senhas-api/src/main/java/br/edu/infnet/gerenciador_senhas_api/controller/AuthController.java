@@ -1,0 +1,56 @@
+package br.edu.infnet.gerenciador_senhas_api.controller;
+
+import br.edu.infnet.gerenciador_senhas_api.dto.LoginRequestDTO;
+import br.edu.infnet.gerenciador_senhas_api.dto.TokenResponseDTO;
+import br.edu.infnet.gerenciador_senhas_api.security.TokenService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+@Tag(name = "Autenticação", description = "Login e geração de token JWT")
+public class AuthController {
+
+    private final AuthenticationManager authenticationManager;
+    private final TokenService tokenService;
+
+    @Operation(summary = "Realizar login", description = "Autentica com e-mail e senha. Retorna o token JWT.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token gerado com sucesso",
+                    content = @Content(schema = @Schema(implementation = TokenResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Credenciais inválidas", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content)
+    })
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        log.info("Tentativa de login: {}", loginRequest.email());
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.senha())
+        );
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String token = tokenService.gerarToken(userDetails);
+
+        log.info("Login bem-sucedido: {}", loginRequest.email());
+        return ResponseEntity.ok(TokenResponseDTO.of(token, tokenService.extrairExpiracao(token)));
+    }
+}
