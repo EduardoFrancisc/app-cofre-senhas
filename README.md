@@ -114,6 +114,8 @@ O Swagger UI está disponível em: **`http://localhost:8080/swagger-ui.html`**
 **5.** Clique em **Authorize** e depois em **Close**.
 
 **6.** Agora todos os endpoints protegidos exibirão o ícone de cadeado fechado 🔒. Execute qualquer rota de `/api/senhas/**` normalmente — o token será enviado automaticamente.
+<img width="786" height="853" alt="image" src="https://github.com/user-attachments/assets/4a3ab06f-d9b6-4389-b866-9204f5b67187" />
+<img width="789" height="593" alt="image" src="https://github.com/user-attachments/assets/c556acc6-4863-4f49-a9a3-e1ae608280fd" />
 
 ---
 
