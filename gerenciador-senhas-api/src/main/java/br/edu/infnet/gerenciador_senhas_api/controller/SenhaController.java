@@ -2,11 +2,13 @@ package br.edu.infnet.gerenciador_senhas_api.controller;
 
 import br.edu.infnet.gerenciador_senhas_api.dto.SenhaRequestDTO;
 import br.edu.infnet.gerenciador_senhas_api.dto.SenhaResponseDTO;
+import br.edu.infnet.gerenciador_senhas_api.model.Usuario;
 import br.edu.infnet.gerenciador_senhas_api.service.SenhaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +19,20 @@ import java.util.List;
 public class SenhaController {
 
     private final SenhaService senhaService;
+
+    @GetMapping
+    public ResponseEntity<List<SenhaResponseDTO>> listarSenhasDoUsuarioAutenticado(
+            @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(senhaService.listarSenhasDoUsuario(usuario.getId()));
+    }
+
+    @PostMapping
+    public ResponseEntity<SenhaResponseDTO> criarSenhaParaUsuarioAutenticado(
+            @AuthenticationPrincipal Usuario usuario,
+            @Valid @RequestBody SenhaRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(senhaService.criarSenha(usuario.getId(), dto));
+    }
 
     @PostMapping("/usuario/{usuarioId}")
     public ResponseEntity<SenhaResponseDTO> criarSenha(

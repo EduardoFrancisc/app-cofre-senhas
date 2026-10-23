@@ -12,24 +12,6 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-/**
- * Serviço de criptografia simétrica usando AES-256 no modo GCM (Galois/Counter Mode).
- *
- * <p><strong>Por que GCM e não ECB?</strong><br>
- * O modo ECB é determinístico: o mesmo texto em claro sempre produz o mesmo texto cifrado,
- * o que vaza padrões e é considerado inseguro para dados sensíveis.
- * O modo GCM é <em>Authenticated Encryption with Associated Data</em> (AEAD): gera um IV
- * aleatório de 12 bytes a cada operação e inclui uma tag de autenticação de 128 bits,
- * garantindo confidencialidade <strong>e</strong> integridade dos dados.
- *
- * <p><strong>Formato do valor armazenado no banco:</strong><br>
- * O ciphertext é salvo em Base64 no formato: {@code <IV 12 bytes><ciphertext + GCM tag 16 bytes>},
- * tudo concatenado antes da codificação. O IV é extraído automaticamente na descriptografia.
- *
- * <p><strong>Requisito da chave:</strong><br>
- * A propriedade {@code api.security.aes.secret} deve ter exatamente 32 bytes em Base64
- * (ex: {@code openssl rand -base64 32}).
- */
 @Service
 public class AesEncryptionService {
 
@@ -49,16 +31,6 @@ public class AesEncryptionService {
         this.secretKey = new SecretKeySpec(keyBytes, "AES");
     }
 
-    /**
-     * Criptografa um texto em claro usando AES-256-GCM.
-     *
-     * <p>Um IV aleatório de 12 bytes é gerado para cada chamada. O resultado final é
-     * a concatenação {@code IV || ciphertext} codificada em Base64.
-     *
-     * @param textoPlano texto a ser criptografado; não pode ser nulo
-     * @return string Base64 contendo IV + ciphertext cifrado
-     * @throws AesEncryptionException se a operação criptográfica falhar
-     */
     public String criptografar(String textoPlano) {
         try {
             byte[] iv = gerarIv();
@@ -67,7 +39,6 @@ public class AesEncryptionService {
 
             byte[] ciphertext = cipher.doFinal(textoPlano.getBytes());
 
-            // Concatena IV + ciphertext em um único array antes de codificar em Base64
             byte[] ivMaisCiphertext = ByteBuffer.allocate(iv.length + ciphertext.length)
                     .put(iv)
                     .put(ciphertext)
@@ -80,16 +51,6 @@ public class AesEncryptionService {
         }
     }
 
-    /**
-     * Descriptografa um valor previamente cifrado por {@link #criptografar(String)}.
-     *
-     * <p>Os primeiros 12 bytes do payload decodificado são interpretados como o IV;
-     * o restante é o ciphertext autenticado pelo GCM.
-     *
-     * @param textoCriptografado string Base64 contendo IV + ciphertext
-     * @return texto em claro original
-     * @throws AesEncryptionException se o token for adulterado, expirado ou inválido
-     */
     public String descriptografar(String textoCriptografado) {
         try {
             byte[] ivMaisCiphertext = Base64.getDecoder().decode(textoCriptografado);
