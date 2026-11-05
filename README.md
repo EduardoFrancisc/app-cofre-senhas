@@ -169,3 +169,50 @@ api.security.token.expiration-ms=86400000
 | `GET`  | `/api/senhas/{id}` | ✅ Bearer | Buscar senha por ID |
 | `PUT`  | `/api/senhas/{id}` | ✅ Bearer | Atualizar senha |
 | `DELETE` | `/api/senhas/{id}` | ✅ Bearer | Deletar senha |
+
+---
+
+## ☁️ Deploy na nuvem (Render)
+
+O projeto já está preparado para deploy no Render com Docker.
+
+### Arquivos adicionados
+- `gerenciador-senhas-api/Dockerfile` — build multi-stage da aplicação Spring Boot.
+- `gerenciador-senhas-api/.dockerignore` — ignora arquivos desnecessários no build.
+- `render.yaml` — Blueprint do Render (Web Service + PostgreSQL).
+
+### Passo a passo
+
+1. **Gere os segredos de produção** (não use os valores de fallback do `application.properties`):
+   ```bash
+   openssl rand -base64 64   # JWT_SECRET
+   openssl rand -base64 32   # AES_SECRET
+   ```
+
+2. **Envie o código para o GitHub** (incluindo os arquivos acima).
+
+3. No Render, clique em **New → Blueprint** e selecione o repositório. O Render lerá o `render.yaml` e criará:
+   - O Web Service (Docker) da API;
+   - O banco PostgreSQL (`gerenciador_senhas`).
+
+4. Na aba **Environment** do Web Service, preencha manualmente (marcadas como `sync: false`):
+   - `JWT_SECRET`
+   - `AES_SECRET`
+
+   As variáveis `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` são preenchidas automaticamente a partir do banco.
+
+5. Aguarde o build/deploy. A URL pública será algo como:
+   ```
+   https://gerenciador-senhas-api.onrender.com
+   ```
+
+6. Teste a API:
+   - Swagger UI: `https://<seu-servico>.onrender.com/swagger-ui.html`
+   - Health check: `https://<seu-servico>.onrender.com/v3/api-docs`
+
+### Observações
+- A aplicação escuta na porta definida pela variável `PORT` (injetada pelo Render). Em execução local usa `8080`.
+- O Hibernate cria/atualiza as tabelas automaticamente (`ddl-auto=update`).
+- O plano gratuito do Render coloca o serviço em sleep após inatividade; a primeira requisição pode demorar alguns segundos.
+- Se preferir deploy manual (sem Blueprint), crie um PostgreSQL no Render e defina `SPRING_DATASOURCE_URL` (JDBC), `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD` manualmente.
+- Para rodar localmente, copie `gerenciador-senhas-api/.env.example` para `gerenciador-senhas-api/.env` e preencha `JWT_SECRET` e `AES_SECRET` (ou exporte as variáveis de ambiente).

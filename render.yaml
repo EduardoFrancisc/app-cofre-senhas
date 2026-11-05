@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: gerenciador-senhas-api
+    runtime: docker
+    rootDir: gerenciador-senhas-api
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /v3/api-docs
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: gerenciador-senhas-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: gerenciador-senhas-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: gerenciador-senhas-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: gerenciador-senhas-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: gerenciador-senhas-db
+          property: password
+      - key: JWT_SECRET
+        sync: false
+      - key: AES_SECRET
+        sync: false
+
+databases:
+  - name: gerenciador-senhas-db
+    plan: free
+    databaseName: gerenciador_senhas
+    user: gerenciador_senhas_user
